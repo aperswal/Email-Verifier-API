@@ -1,0 +1,14 @@
+{
+  "name": "email-verifier",
+  "version": "1.0.0",
+  "description": "Email verification service with disposable email detection",
+  "main": "handler.js",
+  "dependencies": {
+    "aws-sdk": "^2.1540.0",
+    "node-fetch": "^2.7.0"
+  },
+  "scripts": {
+    "deploy": "serverless deploy",
+    "local": "serverless offline"
+  }
+}
