@@ -68,9 +68,12 @@ async function updateBlocklist() {
 // Enhanced MX record checking
 async function checkMXRecords(domain) {
   try {
+    console.log(`Checking MX records for domain: ${domain}`);
     const records = await resolveMx(domain);
-    // Ensure we have valid MX records with proper priorities
-    return records && records.length > 0 && records.some(record => record.priority >= 0);
+    const hasValidRecords = records && records.length > 0 && records.some(record => record.priority >= 0);
+    console.log(`MX records for ${domain}:`, JSON.stringify(records));
+    console.log(`Has valid MX records: ${hasValidRecords}`);
+    return hasValidRecords;
   } catch (error) {
     console.log(`MX lookup failed for ${domain}:`, error.message);
     return false;
@@ -159,23 +162,17 @@ exports.verifyEmail = async (event) => {
 
     // 2. Disposable Check
     const domain = email.split('@')[1].toLowerCase();
-    // Check if the domain or any of its parts match the blocklist
-    const domainParts = domain.split('.');
-    for (let i = 0; i < domainParts.length - 1; i++) {
-      const checkDomain = domainParts.slice(i).join('.');
-      if (DISPOSABLE_DOMAINS.has(checkDomain)) {
-        verification.disposable = true;
-        break;
-      }
-    }
+    verification.disposable = DISPOSABLE_DOMAINS.has(domain);
     
     if (verification.disposable) {
+      console.log(`Disposable domain detected: ${domain}`);
       await updateCache(email, verification);
       return createResponse(200, { result: verification });
     }
 
     // 3. Enhanced MX Record Check
     verification.mxRecord = await checkMXRecords(domain);
+    console.log(`MX check for ${domain}: ${verification.mxRecord}`);
     if (!verification.mxRecord) {
       await updateCache(email, verification);
       return createResponse(200, { result: verification });
@@ -183,9 +180,14 @@ exports.verifyEmail = async (event) => {
 
     // 4. SMTP Verification via SES
     try {
+      console.log(`Attempting SMTP verification for: ${email}`);
       await ses.verifyEmailAddress({ EmailAddress: email }).promise();
       verification.smtp = true;
-      verification.verified = true;
+      // Only mark as verified if all checks pass
+      verification.verified = verification.syntax && 
+                            !verification.disposable && 
+                            verification.mxRecord && 
+                            verification.smtp;
     } catch (error) {
       console.log(`SMTP verification failed for ${email}:`, error.message);
       verification.smtp = false;
