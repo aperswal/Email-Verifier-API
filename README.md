@@ -100,9 +100,6 @@ endpoints:
   POST - https://xxxxx.execute-api.us-east-1.amazonaws.com/dev/verify
 ```
 
-Mine is currently:
-https://trgiqyj4m6.execute-api.us-east-1.amazonaws.com/dev/verify 
-
 ## API Usage
 
 ### Endpoint
